@@ -1,0 +1,42 @@
+PROGRAM MQTT_Registro_Periodico
+VAR
+	Registrar		:	R_TRIG;
+	Contador		:	INT;
+	Temporizador	:	TON;
+	Saida			:	Saida_Registradores;
+	Broker			:	MQTT_Client.FB_MQTTClient
+					:=	(i_xEnable			:= TRUE,
+						 i_sBrokerAddress	:= 'localhost',
+						 i_uiPort			:= Parametros.MQTT_Porta,
+						 i_sTopicSubscribe	:= 'RL'						,
+						 i_sTopicPublish	:= 'RP'						,
+						 i_xSubscribe		:= TRUE						,
+						 i_xPublish			:= TRUE						);
+						 
+	Teste: STRING;
+END_VAR
+
+Registrar	(CLK:= Acionamento_Pedaleira);
+Broker		(i_xSubscribe := TRUE);
+
+IF	Registrar.Q
+	THEN Contador_Acionamento := Contador_Acionamento + 1;
+END_IF
+
+Temporizador (IN :=TRUE,PT :=Tempo_Pedaleira);
+IF	Temporizador.Q
+	THEN	Temporizador (IN :=FALSE);
+			Contador_Acionamento := 0;
+END_IF
+	
+WHILE Contador_Acionamento >= Padrao_Pedaleira
+	DO	Broker (i_sPayload := 'Perigo', i_xPublish := TRUE, i_xSubscribe := FALSE);
+		Broker (i_xPublish := FALSE);
+		Broker (i_sPayload := 'Contato_1', i_xPublish := TRUE, i_xSubscribe := FALSE);
+		Broker (i_xPublish := FALSE);
+		Broker (i_sPayload := 'Contato_2', i_xPublish := TRUE, i_xSubscribe := FALSE);
+		Broker (i_xPublish := FALSE);
+		Broker (i_sPayload := 'Contato_3', i_xPublish := TRUE, i_xSubscribe := FALSE);
+		Broker (i_xPublish := FALSE);
+		Contador_Acionamento := 0;
+END_WHILE
